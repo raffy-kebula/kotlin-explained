@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -114,6 +115,21 @@ class MainActivity : ComponentActivity() {
                                 .padding(16.dp)
                         ) {
                             Text("Elimina ultima nota")
+                        }
+
+                        // Pulsante per aprire la schermata della posizione
+                        Button(
+                            onClick = {
+                                // Crea un Intent per avviare LocationActivity
+                                val intent = Intent(this@MainActivity, LocationActivity::class.java)
+                                startActivity(intent)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .padding(bottom = 8.dp)
+                        ) {
+                            Text("Apri posizione")
                         }
                     }
                 }

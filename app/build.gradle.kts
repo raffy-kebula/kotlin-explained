@@ -55,5 +55,7 @@ dependencies {
     val room_version = "2.8.4"
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
-    ksp("androidx.room:room-compiler:$room_version") // ← AGGIUNTO, era mancante!
+    ksp("androidx.room:room-compiler:$room_version")
+
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 }
