@@ -13,8 +13,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import com.example.myapplication.api.RetrofitClient
+import com.example.myapplication.db.NoteDatabase
+import com.example.myapplication.models.Note
+import com.example.myapplication.models.NoteViewModel
+import com.example.myapplication.models.NoteViewModelFactory
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.google.android.gms.location.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class LocationActivity : ComponentActivity() {
 
@@ -26,6 +36,15 @@ class LocationActivity : ComponentActivity() {
 
     // lo stato Compose: ogni volta che cambia, la UI si ridisegna automaticamente
     private val locationState = mutableStateOf("Posizione non disponibile")
+
+    // Stato delle API
+    private val apiState = mutableStateOf("Caricamento API...")
+
+    // ViewModel / Database
+    private lateinit var viewModel: NoteViewModel
+
+    // Stato Compose per le note
+    private val notesState = mutableStateOf<List<Note>>(emptyList())
 
     // Launcher per la richiesta permessi
     private val locationPermissionRequest = registerForActivityResult(
@@ -48,14 +67,56 @@ class LocationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // ViewModel / Database
+        val db = NoteDatabase.getDatabase(this)
+        val factory = NoteViewModelFactory(db.noteDao())
+        viewModel = ViewModelProvider(this, factory)[NoteViewModel::class.java]
+
+        // Osserva i dati del database
+        viewModel.allNotes.observe(this) { notes ->
+            notesState.value = notes
+        }
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         setContent {
             MyApplicationTheme {
-                Text(
-                    text = locationState.value,
+                androidx.compose.foundation.layout.Column(
                     modifier = Modifier.padding(16.dp)
-                )
+                ) {
+                    Text(
+                        text = "📍 Posizione:\n${locationState.value}",
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    Text(
+                        text = "🌐 API:\n${apiState.value}",
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    // Lista Note dal database
+                    Text(text = "📝 Note:",
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    notesState.value.forEach { note ->
+                        Text(
+                            text = "• ${note.title}: ${note.content}",
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            try {
+                val posts = withContext(Dispatchers.IO) {
+                    RetrofitClient.api.getPosts()
+                }
+                apiState.value = posts.first().body
+            } catch (e: Exception) {
+                apiState.value = "Errore: ${e.message}"
             }
         }
 
